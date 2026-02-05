@@ -1,0 +1,6 @@
+streamlit
+pandas
+groq
+pdfplumber
+python-dotenv
+matplotlib
