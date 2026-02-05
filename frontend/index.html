@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Chat Assistant</title>
+
+<style>
+:root {
+  --primary: #2563eb;
+  --bg: #f1f5f9;
+  --bot: #e5e7eb;
+  --user: #2563eb;
+}
+* {
+  box-sizing: border-box;
+}
+
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.chat-container {
+  width: 420px;
+  height: 90vh;
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+.chat-header {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: white;
+  padding: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.message {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.user {
+  background: var(--user);
+  color: white;
+  margin-left: auto;
+}
+
+.bot {
+  background: var(--bot);
+  color: #111;
+  margin-right: auto;
+}
+
+.chat-input {
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+select, textarea, input, button {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5f5;
+  font-size: 14px;
+}
+
+button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat-container">
+  <div class="chat-header">🤖 AI Multi-Purpose Chat</div>
+
+  <div class="chat-messages" id="messages"></div>
+
+  <div class="chat-input">
+
+    <!-- Mode Selector -->
+    <select id="mode">
+      <option value="sentiment">Sentiment Analysis</option>
+      <option value="article">Generate Article</option>
+      <option value="summarize">Summarize Last Article</option>
+    </select>
+
+    <textarea id="text" rows="3" placeholder="Type your message..."></textarea>
+    <input type="number" id="wordLimit" placeholder="Word limit (only for summary)" />
+
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+<script>
+let lastArticle = "";
+
+/* -------- Intent Helpers -------- */
+
+function detectWordLimit(text) {
+  const match = text.match(/(\d+)\s*words?/i);
+  return match ? Number(match[1]) : 100;
+}
+
+function isSummarizeIntent(text) {
+  const keywords = ["summarize", "shorten", "reduce", "brief"];
+  return keywords.some(k => text.toLowerCase().includes(k));
+}
+
+function isSentimentIntent(text) {
+  const keywords = [
+    "i feel", "i am feeling", "i hate", "i love",
+    "this is", "i like", "i dislike", "makes me",
+    "i am sad", "i am happy", "i am angry", "i am stressed"
+  ];
+  return keywords.some(k => text.toLowerCase().includes(k));
+}
+
+/* -------- Main Chat Function -------- */
+
+async function sendMessage() {
+  const input = document.getElementById("text");
+  const userText = input.value.trim();
+  const messages = document.getElementById("messages");
+
+  if (!userText) return;
+
+  messages.innerHTML += `<div class="message user">${userText}</div>`;
+
+  let url = "";
+  let payload = {};
+  let responseType = "";
+
+  // 🧠 INTENT DECISION (ORDER MATTERS)
+  if (isSummarizeIntent(userText)) {
+    if (!lastArticle) {
+      messages.innerHTML += `<div class="message bot">⚠️ No article available to summarize.</div>`;
+      return;
+    }
+    url = "http://127.0.0.1:8000/summarize";
+    payload = {
+      text: lastArticle,
+      word_limit: detectWordLimit(userText)
+    };
+    responseType = "summary";
+
+  } else if (isSentimentIntent(userText)) {
+    url = "http://127.0.0.1:8000/sentiment";
+    payload = { text: userText };
+    responseType = "sentiment";
+
+  } else {
+    // 🔥 DEFAULT → ARTICLE GENERATION
+    url = "http://127.0.0.1:8000/article";
+    payload = { topic: userText };
+    responseType = "article";
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    let reply = "";
+
+    if (responseType === "article") {
+      reply = data.article;
+      lastArticle = data.article;
+    }
+
+    if (responseType === "summary") {
+      reply = data.summary;
+    }
+
+    if (responseType === "sentiment") {
+      let emoji = "😐";
+      if (data.sentiment === "Positive") emoji = "😊";
+      if (data.sentiment === "Negative") emoji = "😞";
+      reply = `Sentiment: <b>${data.sentiment}</b> ${emoji}`;
+    }
+
+    messages.innerHTML += `<div class="message bot">${reply}</div>`;
+
+  } catch {
+    messages.innerHTML += `<div class="message bot">⚠️ Server error</div>`;
+  }
+
+  input.value = "";
+  messages.scrollTop = messages.scrollHeight;
+}
+</script>
+
+
+</body>
+</html>
