@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from sentiment.sentiment import analyze_sentiment
-from sentiment.file_utils import read_csv, read_pdf
+from sentiment import analyze_sentiment
+from file_utils import read_csv, read_pdf
 
 st.set_page_config(page_title="Sentiment Analyzer", layout="wide")
 
