@@ -157,29 +157,24 @@ async function sendMessage() {
   let responseType = "";
 
   // 🧠 INTENT DECISION (ORDER MATTERS)
-  if (isSummarizeIntent(userText)) {
-    if (!lastArticle) {
-      messages.innerHTML += `<div class="message bot">⚠️ No article available to summarize.</div>`;
-      return;
-    }
-    url = "http://127.0.0.1:8000/summarize";
-    payload = {
-      text: lastArticle,
-      word_limit: detectWordLimit(userText)
-    };
-    responseType = "summary";
+if (isSummarizeIntent(userText)) {
+  url = `${API_BASE_URL}/summarize`;
+  payload = {
+    text: lastArticle,
+    word_limit: detectWordLimit(userText)
+  };
+  responseType = "summary";
 
-  } else if (isSentimentIntent(userText)) {
-    url = "http://127.0.0.1:8000/sentiment";
-    payload = { text: userText };
-    responseType = "sentiment";
+} else if (isSentimentIntent(userText)) {
+  url = `${API_BASE_URL}/sentiment`;
+  payload = { text: userText };
+  responseType = "sentiment";
 
-  } else {
-    // 🔥 DEFAULT → ARTICLE GENERATION
-    url = "http://127.0.0.1:8000/article";
-    payload = { topic: userText };
-    responseType = "article";
-  }
+} else {
+  url = `${API_BASE_URL}/article`;
+  payload = { topic: userText };
+  responseType = "article";
+}
 
   try {
     const response = await fetch(url, {
