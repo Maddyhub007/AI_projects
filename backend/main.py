@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.sentiment import analyze_sentiment
-from backend.summarizer import generate_article, summarize_text
+from sentiment import analyze_sentiment
+from summarizer import generate_article, summarize_text
 
 app = FastAPI()
 
